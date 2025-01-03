@@ -2,7 +2,8 @@
 import MagnifyingGlass from "@/Components/Icons/MagnifyingGlass.vue";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import Pagination from "@/Components/Pagination.vue";
-import { Link, Head, usePage, useForm } from "@inertiajs/vue3";
+import { Link, Head, usePage, useForm, router } from "@inertiajs/vue3";
+import { computed, ref, watch } from "vue";
 
 defineProps({
     students: {
@@ -10,6 +11,44 @@ defineProps({
         required: true,
     },
 });
+
+let search = ref(usePage().props.search),
+    pageNumber = ref(1);
+
+let studentsUrl = computed(() => {
+    let url = new URL(route("students.index"));
+    url.searchParams.append("page", pageNumber.value);
+
+    if (search.value) {
+        url.searchParams.append("search", search.value);
+    }
+
+    return url;
+});
+
+const updatedPageNumber = (link) => {
+    pageNumber.value = link.url.split("=")[1];
+};
+
+watch(
+    () => studentsUrl.value,
+    (updatedStudentsUrl) => {
+        router.visit(updatedStudentsUrl, {
+            preserveScroll: true,
+            preserveState: true,
+            replace: true,
+        });
+    }
+);
+
+watch(
+    () => search.value,
+    (value) => {
+        if (value) {
+            pageNumber.value = 1;
+        }
+    }
+);
 
 const deleteForm = useForm({});
 
@@ -65,6 +104,7 @@ console.log(usePage().props.students);
                             </div>
 
                             <input
+                                v-model="search"
                                 type="text"
                                 autocomplete="off"
                                 placeholder="Search students data..."
@@ -198,7 +238,10 @@ console.log(usePage().props.students);
                                         </tbody>
                                     </table>
                                 </div>
-                                <Pagination :data="students" />
+                                <Pagination
+                                    :data="students"
+                                    :updatedPageNumber="updatedPageNumber"
+                                />
                             </div>
                         </div>
                     </div>
